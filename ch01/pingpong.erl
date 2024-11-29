@@ -5,7 +5,7 @@
 -spec run() -> ok.
 run() ->
     Pid = spawn(fun ping/0),
-    Pid ! self(),
+    Pid ! {self(), ping},
     receive
         pong -> ok
     end.
@@ -13,5 +13,5 @@ run() ->
 -spec ping() -> pong.
 ping() ->
     receive
-        From -> From ! pong
+        {From, ping} -> From ! pong
     end.
