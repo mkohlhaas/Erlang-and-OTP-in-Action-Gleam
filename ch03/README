@@ -1,0 +1,37 @@
+Standard practice is to give module names a suitable prefix to avoid name clashes as Erlang has a flat namespace.
+Here, we've taken the first two letters of the acronyms TCP and RPC: tr_server.
+
+To build this code, run the following command:
+
+erlc *.erl
+
+Generate documentation: Start Erlang (erl).
+1> edoc:files(["tr_server.erl"], [{dir, "doc"}].
+
+To run the test: Start Erlang (erl) and do one of the following.
+1> eunit:test(tr_server).
+2> tr_server:test().
+
+To run the program, start Erlang (in the same directory),
+then run the following in the Erlang shell:
+
+1> tr_server:start().
+{ok,<0.34.0>}
+
+After that, open another terminal window and use telnet
+to connect to the application, like this:
+
+$ telnet localhost 1055
+Trying 127.0.0.1...
+Connected to localhost.localdomain.
+Escape character is '^]'.
+lists:reverse([1,2,3]).
+[3,2,1]
+init:stop().
+ok
+Connection closed by foreign host.
+
+You can call API functions at any time while interacting with the server via telnet.
+2> tr_server:get_count().
+3> regs(). % see that tr_server has been registered
+4> tr_server:stop().

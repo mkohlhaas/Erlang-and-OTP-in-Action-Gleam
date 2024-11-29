@@ -1,0 +1,67 @@
+Compilation:
+$ erlc create_tables.erl
+
+Start Erlang node:
+$ erl -sname dbnode -mnesia dir '"/tmp/mnesia_store"'
+
+1> mnesia:create_schema([node()]).                                                                                     % check /tmp/mnesia_store
+2> mnesia:start().                                                                                                     % check /tmp/mnesia_store
+3> mnesia:info().                                                                                                      % only schema table available
+4> create_tables:init_tables().                                                                                        % creates 3 tables
+5> mnesia:info().
+6> [create_tables:insert_project(Title, Description) || {Title, Description} <-                                        % fill database tables
+     [{simple_cache, "a simple cache application"},
+      {storage, "a simple storage application"},
+      {cookies, "a simple cookies application"},
+      {stash, "a simple stash application"},
+      {hoard, "a simple hoard application"},
+      {store, "a simple store application"},
+      {data, "a simple data application"},
+      {hidden, "a simple hidden application"},
+      {disks, "a simple disks application"},
+      {ammunition, "a simple ammunition application"},
+      {files, "a simple files application"},
+      {quantity, "a simple quantity application"},
+      {hive_up, "a simple hive_up application"},
+      {memory, "a simple memory application"},
+      {lay_away, "a simple lay_away application"},
+      {hideout, "a simple hideout application"}]].
+7> [create_tables:insert_user(Id, Name, ProjectTitles) || {Id, Name, ProjectTitles} <-
+    [{1, geez_god, [simple_cache, hoard, store]},
+     {2, locomate, [data, hidden, ammunition]},
+     {3, speckled_dudess, [simple_cache, files, hive_up, lay_away]},
+     {4, genialkeebz, [memory, hideout, disks, hidden]},
+     {5, lovestump, [simple_cache, cookies, stash, files]},
+     {6, hyper_zoom, [ storage, hoard]},
+     {7, doggondivis, [disks, simple_cache, store]},
+     {8, funambulist, [stash, simple_cache, ammunition]},
+     {9, dream_girl, [quantity, files, hive_up]},
+     {10, evil_weevil, [cookies, data, disks]},
+     {11, bold_style, [storage, data, hidden]},
+     {12, bold_touch, [hive_up]},
+     {13, thought_motel, [hideout, hive_up, hidden]},
+     {14, piggy_honeybear, [lay_away, memory, quantity]},
+     {15, cyber_floss_lord, [store, hoard]},
+     {16, awesome_girl, [simple_cache]},
+     {17, glam_angel, [disks, storage, store]},
+     {18, zombie_guide, [cookies]}]].
+8> mnesia:info().
+
+For querying the Mnesia database you can use:
+1.) Direct access functions: mnesia:read, mnesia:dirty_read and the like.
+2.) Matching operations: Using select statements.
+3.) Query List Comprehensions (QLC):
+    In code you need an include, but not in the Erlang shell: -include_lib("stdlib/include/qlc.hrl").
+
+9> mnesia:dirty_read(user, 1).                                                                                         % direct access
+[{user,1,geez_god}]
+10> mnesia:dirty_read(contributor, 1).
+[{contributor,1,simple_cache},
+ {contributor,1,hoard},
+ {contributor,1,store}]
+11> rr("create_tables.hrl").
+12> mnesia:transaction(fun() -> mnesia:select(user, [{#user{id = '$1', name = locomate}, [], ['$1']}]) end).           % matching operation
+{atomic,[2]}
+13> mnesia:transaction(fun() -> qlc:e(qlc:q([ X || X <- mnesia:table(user), X#user.name  =:= locomate])) end).         % QLC
+{atomic,[#user{id = 2,name = locomate}]}
+14> mnesia:stop().                                                                                                     % stop database

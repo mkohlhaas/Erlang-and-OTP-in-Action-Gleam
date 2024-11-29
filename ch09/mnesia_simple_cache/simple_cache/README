@@ -1,0 +1,1 @@
+Main changes are in src/sc_store.erl. (Search/grep for "mnesia".)

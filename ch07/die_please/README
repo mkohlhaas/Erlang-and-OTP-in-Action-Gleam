@@ -1,0 +1,185 @@
+Error logging in Erlang.
+
+'die_please1.erl' is just simple non-OTP Erlang code that crashes.
+'die_please2.erl' is a gen_server (OTP) that crashes.
+'custom_error_report.erl' implements a gen_event server with custom reports.
+
+die_please2 will generate a Crash report with or without SASL (System Architecture Support Libaries) running.
+(Wasn't like that at the time the book was written. Only with SASL it generated a Crash report.)
+
+die_please1 will still generate basic error messages even after SASL is started. No OTP integration.
+You get OTP integration by starting processes with proc_lib:spawn/1.
+proc_lib:spawn/1 starts the process the OTP way.
+
+The Beam uses logger instead of error_logger now.
+error_logger is deprecated but kept for backwards compatibility.
+error_logger forwards to logger.
+
+Compilation (will throw some ignorable warnings):
+$ erlc *.erl
+
+Start Erlang shell:
+$ erl
+
+1> die_please1:go().
+** exception error: no match of right hand side value right_now
+     in function  die_please1:go/0 (die_please1.erl, line 10)
+2> die_please2:start_link().
+{ok,<0.86.0>}
+
+=ERROR REPORT==== 10-Mar-2023::04:13:11.896777 ===
+** Generic server die_please2 terminating
+** Last message in was timeout
+** When Server state == {state}
+** Reason for termination ==
+** {{badmatch,right_now},
+    [{die_please2,handle_info,2,[{file,"die_please2.erl"},{line,36}]},
+     {gen_server,try_dispatch,4,[{file,"gen_server.erl"},{line,1123}]},
+     {gen_server,handle_msg,6,[{file,"gen_server.erl"},{line,1200}]},
+     {proc_lib,init_p_do_apply,3,[{file,"proc_lib.erl"},{line,240}]}]}
+
+=CRASH REPORT==== 10-Mar-2023::04:13:11.897247 ===
+  crasher:
+    initial call: die_please2:init/1
+    pid: <0.86.0>
+    registered_name: die_please2
+    exception error: no match of right hand side value right_now
+      in function  die_please2:handle_info/2 (die_please2.erl, line 36)
+      in call from gen_server:try_dispatch/4 (gen_server.erl, line 1123)
+      in call from gen_server:handle_msg/6 (gen_server.erl, line 1200)
+    ancestors: [<0.84.0>]
+    message_queue_len: 0
+    messages: []
+    links: [<0.84.0>]
+    dictionary: []
+    trap_exit: false
+    status: running
+    heap_size: 2586
+    stack_size: 28
+    reductions: 5284
+  neighbours:
+    neighbour:
+      pid: <0.84.0>
+      registered_name: []
+      initial_call: {erlang,apply,2}
+      current_function: {shell,eval_loop,3}
+      ancestors: []
+      message_queue_len: 0
+      links: [<0.80.0>,<0.86.0>]
+      trap_exit: false
+      status: waiting
+      heap_size: 376
+      stack_size: 7
+      reductions: 1316
+      current_stacktrace: [{shell,eval_loop,3,[{file,"shell.erl"},{line,626}]}]
+** exception error: no match of right hand side value right_now
+     in function  die_please2:handle_info/2 (die_please2.erl, line 36)
+     in call from gen_server:try_dispatch/4 (gen_server.erl, line 1123)
+     in call from gen_server:handle_msg/6 (gen_server.erl, line 1200)
+     in call from proc_lib:init_p_do_apply/3 (proc_lib.erl, line 240)
+3> application:start(sasl).
+ok
+4> die_please2:start_link().
+{ok,<0.3535.0>}
+
+=ERROR REPORT==== 10-Mar-2023::05:34:05.303509 ===
+** Generic server die_please2 terminating
+** Last message in was timeout
+** When Server state == {state}
+** Reason for termination ==
+** {{badmatch,right_now},
+    [{die_please2,handle_info,2,[{file,"die_please2.erl"},{line,36}]},
+     {gen_server,try_dispatch,4,[{file,"gen_server.erl"},{line,1123}]},
+     {gen_server,handle_msg,6,[{file,"gen_server.erl"},{line,1200}]},
+     {proc_lib,init_p_do_apply,3,[{file,"proc_lib.erl"},{line,240}]}]}
+
+=CRASH REPORT==== 10-Mar-2023::05:34:05.303915 ===
+  crasher:
+    initial call: die_please2:init/1
+    pid: <0.3535.0>
+    registered_name: die_please2
+    exception error: no match of right hand side value right_now
+      in function  die_please2:handle_info/2 (die_please2.erl, line 36)
+      in call from gen_server:try_dispatch/4 (gen_server.erl, line 1123)
+      in call from gen_server:handle_msg/6 (gen_server.erl, line 1200)
+    ancestors: [<0.2010.0>]
+    message_queue_len: 0
+    messages: []
+    links: [<0.2010.0>]
+    dictionary: []
+    trap_exit: false
+    status: running
+    heap_size: 2586
+    stack_size: 28
+    reductions: 5384
+  neighbours:
+    neighbour:
+      pid: <0.2010.0>
+      registered_name: []
+      initial_call: {erlang,apply,2}
+      current_function: {shell,eval_loop,3}
+      ancestors: []
+      message_queue_len: 0
+      links: [<0.80.0>,<0.3535.0>]
+      trap_exit: false
+      status: waiting
+      heap_size: 17731
+      stack_size: 7
+      reductions: 2823977
+      current_stacktrace: [{shell,eval_loop,3,[{file,"shell.erl"},{line,626}]}]
+** exception error: no match of right hand side value right_now
+     in function  die_please2:handle_info/2 (die_please2.erl, line 36)
+     in call from gen_server:try_dispatch/4 (gen_server.erl, line 1123)
+     in call from gen_server:handle_msg/6 (gen_server.erl, line 1200)
+     in call from proc_lib:init_p_do_apply/3 (proc_lib.erl, line 240)
+5> die_please1:go().
+** exception error: no match of right hand side value right_now
+     in function  die_please1:go/0 (die_please1.erl, line 10)
+6> proc_lib:spawn(fun die_please1:go/0).
+<0.137.0>
+7> =CRASH REPORT==== 10-Mar-2023::05:48:22.788268 ===
+  crasher:
+    initial call: die_please1:go/0
+    pid: <0.137.0>
+    registered_name: []
+    exception error: no match of right hand side value right_now
+      in function  die_please1:go/0 (die_please1.erl, line 10)
+    ancestors: [<0.124.0>]
+    message_queue_len: 0
+    messages: []
+    links: []
+    dictionary: []
+    trap_exit: false
+    status: running
+    heap_size: 233
+    stack_size: 28
+    reductions: 116
+  neighbours:
+8>
+
+Custom error reporting:
+
+The logging facility is based on Erlang's event handling framework, which uses the gen_event behaviour.
+To plug into the logging infrastructure, you need to write a new gen_event behaviour implementation module.
+In handle_event/2 you receive the error log events.
+
+When you start a gen_event container (sometimes referred to as the event manager), it initially has no callback module.
+Instead, one or several handlers may be added (and removed again) dynamically after the event manager has been initialized.
+When an event is posted to an event manager, all the currently registered handler modules are called individually to handle the event.
+Keep in mind that the code in your particular callback module generally isn't the only code that the event manager calls.
+You should avoid doing strange things to the process state.
+Since OTP 21.0 there is no error_logger process (the event manager) any more but instead the logger process.
+
+Using the custom_error_report:
+8> custom_error_report:register_with_logger().
+ok
+9> error_logger:info_msg("This is a message~n").
+CUSTOM INFO <<0.82.0>> This is a message                          <<< custom error report
+=INFO REPORT==== 10-Mar-2023::06:23:52.707623 ===          <<< standard error handler
+This is a message
+
+ok
+10>
+
+Two outputs: 1.) custom_error_report
+             2.) standard error handler

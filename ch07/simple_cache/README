@@ -1,0 +1,92 @@
+Create Your Own Event Stream
+
+Same architecture as error_logger/logger creating your own gen_event container.
+
+Two more modules added:
+
+1. Event manager/gen_event container:
+src/sc_event.erl
+    Just start the thing and add/delete handlers. Really nothing else to do.
+    gen_event:start_link(...).
+    gen_event:add_handler(...).
+    gen_event:delete_handler(...).
+
+2. Event handler:
+src/sc_event_logger.erl
+    Adds itself to the event manager.
+    Implements gen_event behavior.
+
+In the API module src/simple_cache.erl we fire events using functions from src/sc_event.erl.
+
+From the documentation: (* = used in our code)
+$ erl -man gen_event
+
+       gen_event module                     Callback module
+       = src/sc_event.erl                   = src/sc_event_logger.erl
+       ----------------                     ---------------
+       gen_event:start
+       gen_event:start_monitor
+     * gen_event:start_link       ----->    -
+
+     * gen_event:add_handler
+       gen_event:add_sup_handler  ----->  * Module:init/1
+
+     * gen_event:notify
+       gen_event:sync_notify      ----->  * Module:handle_event/2
+
+       gen_event:send_request
+       gen_event:call             ----->  * Module:handle_call/2
+
+       -                          ----->  * Module:handle_info/2
+
+     * gen_event:delete_handler   ----->    Module:terminate/2
+
+       gen_event:swap_handler
+       gen_event:swap_sup_handler ----->  * Module1:terminate/2
+                                            Module2:init/1
+
+       gen_event:which_handlers   ----->    -
+
+       gen_event:stop             ----->    Module:terminate/2
+
+       -                          ----->  * Module:code_change/3
+
+An OTP application always has a single root supervisor that starts everything else.
+The gen_event container that the sc_event module starts is a service that should be managed by a supervisor.
+We cannot use the element supervisor because it is a simple_one_for_one gen_server that can only start one type of child.
+
+Solution:
+
+                                root supervisor
+                                (src/sc_sup.erl)
+                                        |
+                   +--------------------+--------------------+
+                   |                                         |
+         element supervisor                         custom event manager
+         (src/sc_element_sup.erl)                   (src/sc_event.erl)
+         (gen_server)                               (gen_event)
+         (simple_one_for_one)
+
+Compilation:
+$ erlc -o ./ebin ./src/*.erl
+
+To run the program, first start Erlang like this (lease time is 1 minute):
+
+$ erl -pa ./ebin
+
+1> observer:start().
+ok
+1> application:start(sasl).
+ok
+2> application:start(simple_cache).
+ok
+3> [simple_cache:insert(X, X) || X <- lists:seq(1,10)].
+... generates insert events
+4> [simple_cache:insert(X, X) || X <- lists:seq(1,5)].
+... generates replacement events
+5> [simple_cache:lookup(X) || X <- lists:seq(1,10)].
+... generates lookup events
+6> [simple_cache:delete(X) || X <- lists:seq(1,5)].
+... generates delete events
+
+After 1 minute (= default timeout) you will receive timeout events.

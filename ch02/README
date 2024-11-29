@@ -1,0 +1,305 @@
+The file my_module.erl contains all the example code from chapter 2.
+
+> help().
+> i(). % information about the system
+> whereis(init).
+<0.0.0>
+> i(0,0,0). % information about pid <0.0.0>
+> memory().
+> memory(total).
+> m(timer).
+> h(timer).
+> h(timer,sleep).
+
+Ctrl-C (Break menu)
+Ctrl-C Ctrl-C (exit shell)
+Ctrl-G (User Switch Command menu)
+
+# Binary, Bitstrings
+> <<1,2,3>>. % binary, bitstrings are not necessarily 8 bits long
+<<1,2,3>>
+> <<65,66,67>>.
+<<"ABC">>
+
+# List concatenation
+> [1,2,3] ++ [4,5,6]. % list concatenation
+[1,2,3,4,5,6]
+> "ABC" ++ "DEF".     % strings are just lists of characters
+"ABCDEF"
+> [$A,$B,$C].
+"ABC"
+
+# Rerferences
+> make_ref().         % references are used as unique one-off labels or cookies
+#Ref<0.1178036754.3495952385.224348>
+
+# Cons
+> [1,2 | [3]].        % you can use | also for pattern matching
+[1,2,3]
+
+# Remote and local calls
+> lists:reverse([1,2,3]). % This is a remote call - a call in a different module. A local call is a call in the same module.
+
+Code server
+> regs().                 % code_server is a registered process
+> code:get_path().        % the code_server looks for beam files in these directories, e.g. the current directory and erlang system directories
+[".","/usr/lib64/erlang/lib/kernel-8.5.4/ebin",
+ "/usr/lib64/erlang/lib/stdlib-4.3.1/ebin",
+ "/usr/lib64/erlang/lib/xmerl-1.3.31/ebin",...]
+
+As a convention beam files are stored in a directory called 'ebin'.
+> h(code,add_patha). % adds a directory to the beginning of the code path
+
+$ erlc -o ./ebin my_module.erl # compile module into ebin directory
+
+# Pattern Matching
+The = operator is a pattern match!
+ _ is a don't care pattern
+
+You can match strings prefixes with ++
+> "http://" ++ Rest = "http://www.erlang.org".
+"http://www.erlang.org"
+> Rest.
+"www.erlang.org"
+
+# Functions
+When referencing functions you can't just use the function name and its arity, you have to use the keyword 'fun' in front of it.
+> F = fun either_or_both/2
+For functions in some other module you use:
+> F = fun other_module:some_function/2.
+
+Anonymous functions: fun ... end.
+> F = fun() -> 42 end.
+> F1 = fun(X) -> X + 1 end.
+
+A more complicated anonymous function:
+fun ({circle, Radius}) -> Radius * Radius * math:pi();
+    ({square, Side}) -> Side * Side;
+    ({rectangle, Height, Width}) -> Height * Width
+end
+
+# List comprehensions
+[ X || X <- ListOfIntegers, X > 0 ]                           % we need to use ||, lists already use |
+[ math:pow(X,2) || X <- ListOfIntegers, X > 0, X rem 2 == 0 ] % map and filter operations
+[ {area, H*W} || {rectangle, H, W} <- Shapes, H*W >= 10 ]     % the left side of the <- arrow can be any pattern
+
+# Bitstrings
+A segment specifier for bitstrings can be on one of the following forms:
+Data
+Data:Size
+Data/TypeSpecifiers
+Data:Size/TypeSpecifiers
+
+Type specifiers:
+- integer, float, binary, bytes, bitstring, bits, utf8, utf16, utf32
+- signed, unsigned
+- big, little, native
+
+<<"Motörhead"/utf8>> % UTF encoding
+> B1 = <<1,2>>.
+> B2 = <<3,4>>.
+> <<B1/bits, B2/bits>>.
+
+ipv4(<<Version:4, IHL:4, ToS:8, TotalLength:16,       % pattern machting with bit syntax
+       Identification:16, Flags:3, FragOffset:13,
+       TimeToLive:8, Protocol:8, Checksum:16,
+       SourceAddress:32, DestinationAddress:32,
+       OptionsAndPadding:((IHL-5)*32)/bits,
+       RemainingData/bytes >>) when Version =:= 4 -> ...
+
+<< <<X:3>> || X <- [1,2,3,4,5,6,7] >>                 % bitstring comprehensions
+
+# Records
+Record Declaration
+-record(customer, {name="<anonymous>", address, phone}).
+
+## Record Creation
+> #customer{}.
+> #customer{phone="55512345"}.
+> #customer{name="Sandy Claws", address="Christmas Town", phone="55554321"}.
+
+You always need to give the *RECORD NAME AFTER THE #*, so the compiler can match it to the record declaration.
+
+> R = #customer{phone="55512345"}.
+> R#customer.name     % dot notation
+"<anonymous>"
+> R#customer.address
+undefined
+> R#customer.phone
+"55512345"
+
+Using pattern matching:
+print_contact(#customer{name=Name, address=Addr, phone=Phone}) when Phone =/= undefined ->
+  io:format("Contact: ~s at ~s.~n", [Name, Phone]).
+
+"Updating" record fields:
+R1 = R#customer{name="Jack Skellington", address="Hallowe'en"}
+
+# Macros
+Defining Macros:
+-define(PI, 3.14).
+-define(pair(X,Y), {X, Y}).
+
+circumference(Radius) -> Radius * 2 * ?PI. % use ? to reference macro
+pair_of_pairs(A, B, C, D) -> ?pair( ?pair(A, B), ?pair(C, D) ).
+
+Undefining Macros:
+-define(foo, false).
+-undef(foo).
+-define(foo, true).
+
+Predefined Macros: ?MODULE, ?FILE, ?LINE
+current_pos() -> [{module, ?MODULE}, {file, ?FILE}, {line, ?LINE}].
+
+# Include Files
+-include("filename.hrl").
+
+You can add include directories from the command line for the compiler:
+$ erlc -I ./inc
+
+Or in the shell: see $ erl -man compile
+> h(c,c).
+> c("src/my_module", [ {i, "../include/"} ]).
+
+Includes the proper file even if Erlang libraries have been updated to a newer version and might be in a different directory:
+-include_lib("kernel/include/file.hrl").
+
+# Conditional Compilation
+-ifdef(DEBUG).     % there is also ifndef
+-export([foo/1]).
+-endif.
+
+-ifdef(DEBUG).
+-define(show(X), io:format("The value of X is: ~w.~n", [X])).
+-else.
+-define(show(X), ok).
+-endif.
+
+foo(A) -> ?show(A), ...
+
+Defining DEBUG:
+> c("src/my_module", [ {i, "../include/"}, {d,DEBUG,true} ]). %  the macro value doesn't matter here, but true is usually used
+
+From the command line for the Erlang compiler:
+$ erlc -DDEBUG=true
+
+# Processes
+## Spawning Processes: spawn, spawn_link, spawn_monitor, spawn_opt.
+
+See: $ erl -man erlang
+
+## Setting The Trap_exit Flag:
+By default, a process dies if it gets an exit signal from another linked process. To prevent this and trap exit signals, the process can set its trap_exit flag:
+
+process_flag(trap_exit, true) % Incoming exit signals will then be converted to harmless messages. The only exception is untrappable signals (kill).
+
+# Selective receive
+receive
+  Pattern1 when Guard1 -> Body1;
+  ...
+  PatternN when GuardN -> BodyN
+after Time -> TimeoutBody % optional
+end
+
+# Registered Processes
+> registered().
+> regs().
+> whereis(user).                   % get Pid of registered process
+> init ! {stop, stop}.             % sending a message to a registered process
+> {some_node, init}! {stop, stop}. % sending a message to a registered process on a another node
+
+# Process Dictionary
+Every process keeps a dictionary. You can put and get values.
+> h(erlang,put).
+> h(erlang,get).
+
+# ETS (Erlang Term Storage) Tables
+
+Runs are node specific. Processes on the same node can share ETS tables.
+Mnesia database runs across nodes in an Erlang cluster.
+
+> m(ets).
+> h(ets).
+
+> T = ets:new(mytable,[]).
+> ets:insert(T, {17, hello}).
+> ets:insert(T, {42, goodbye}).
+> ets:lookup(T, 17). % yields [{17, hello}]
+
+# Exceptions
+
+Three classes of exceptions: error, exit, throw.
+
+error: are reported by the Erlang error logger. E.g. division by zero.
+exit: considered normal (can mean "job finished", "job is giving up") and not reported by the Error logger.
+throw: for user-defined purposes (missing file, bad input, ...).
+
+There is a corresponding built-in function (BIF) to throw (or raise) such an exception:
+erlang:error(Reason)
+exit(Reason)
+throw(SomeTerm)
+
+As a special case, if a process calls exit(normal), and the exception isn't caught,
+that process terminates as if it had finished the job it was spawned to do. This means
+that other (linked) processes won't regard it as an abnormal termination (as they will
+for all other exit reasons).
+
+Simple try...catch expression:
+try
+  some_unsafe_function()
+catch
+  oops -> got_throw_oops;             % default exception class is throw
+  throw:Other -> {got_throw, Other};
+  exit:Reason -> {got_exit, Reason};
+  error:Reason -> {got_error, Reason}
+end
+
+for catching all exceptions use:
+_:_ -> got_some_exception
+
+You can use
+Class:Term -> ...
+if you want to inspect the data in the exception.
+
+Longer form: try ... of ... catch
+
+try
+  some_unsafe_function(...)
+of
+  0 -> io:format("nothing to do~n");
+  N -> do_something_with(N)
+catch
+  _:_ -> io:format("some problem~n")
+end
+
+You can add an after section to any try expression:
+{ok, FileHandle} = file:open("foo.txt", [read]),
+try
+  do_something_with_file(FileHandle)
+after % catch part not necessary
+  file:close(FileHandle) % typically used for cleaning up allocated resources
+end
+
+Getting the stack trace:
+> try throw(test) catch Class:Reason:Stacktrace -> Stacktrace end.
+
+Rethrowing using raise/3:
+try
+  do_something()
+catch
+  Class:Reason:Trace ->
+  case analyze_exc(Class, Reason) of
+    true -> handle_exc(Class, Reason, Trace);
+    false -> erlang:raise(Class, Reason, Trace) % rethrows exception
+  end
+end
+
+Plain old catch:
+> catch 2+2.
+4
+> catch throw(foo).
+foo
+> catch exit(foo).
+{'EXIT',foo}
+> catch foo=bar.
+{'EXIT',{{badmatch,bar},[{erl_eval,expr,3}]}}

@@ -1,0 +1,19 @@
+To build this code, run the following command:
+
+https://erlangforums.com/t/ring-benchmark-erlang-vs-go/684
+https://www.erlang.org/doc/man/erl.html#max_processes
+
+To increase number of processes (1024-134217727; default 262144):
+
+$ erl +P 20000000
+1> erlang:system_info(process_limit).
+33554432
+2> ring:run(100, 1000).
+0.0686978
+3> ring:run(100, 10000).
+0.72715951
+4> ring:run(100, 100000).
+5.337359187
+6> ring:run(100, 1000000).
+46.190517934
+7>

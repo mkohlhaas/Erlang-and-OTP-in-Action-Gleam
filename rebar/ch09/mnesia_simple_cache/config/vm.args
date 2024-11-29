@@ -1,0 +1,6 @@
+-sname simple_cache
+
+-setcookie simple_cache_cookie
+
++K true
++A30

@@ -1,0 +1,51 @@
+---------------------------------------------------------------------------------------------------------
+sc_... = simple cache ...
+
+src/sc_store.erl:
+Store for (key -> pid) mappings.
+Basically a wrapper for ETS (Erlang Term Storage).
+Every process (pid) stores the value.
+
+src/sc_element.erl:
+For every key there is a separate process which stores the value!
+Implemented as gen_server.
+Is used as a dynamic child for the supervisor in a simple_one_for_one restart strategy.
+
+The application uses the prefix sc_ (for Simple Cache) for all modules, except
+the main user API module, which is named simple_cache. This is a common pattern,
+to have a single module acting as a front end that uses the same name as the application.
+See also ebin/simple_cache.app.
+
+src/simple_cache.erl:
+The only API interface for users of simple_cache application.
+Same name as application.
+Uses functions from sc_store and sc_element.
+
+---------------------------------------------------------------------------------------------------------
+
+To build this code, run the following command:
+
+erlc -o ./ebin ./src/*.erl
+
+To run the program, first start Erlang like this:
+
+erl -pa ./ebin
+
+Then, run the following in the Erlang shell:
+
+1> observer:start().
+ok
+2> [simple_cache:insert(X, X, 15) || X <- lists:seq(1,100)].
+[ok,ok,ok,ok,ok,ok,ok,ok,ok,ok,ok,ok,ok,ok,ok,ok,ok,ok,ok,
+ ok,ok,ok,ok,ok,ok,ok,ok,ok,ok|...]
+3> simple_cache:lookup(1).
+{ok,1}
+4> simple_cache:lookup(100).
+{ok,100}
+5> simple_cache:lookup(2).
+{ok,2}
+6> simple_cache:lookup(200).
+{error,not_found}
+7>
+
+---------------------------------------------------------------------------------------------------------

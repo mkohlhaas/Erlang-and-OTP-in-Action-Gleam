@@ -1,0 +1,57 @@
+Some basic facts about the modules involved:
+1.) The resource_discovery module saves nodes not pids as in chapter 8! (simple_cache/src/sc_app.erl:11: resource_discovery:add_local_resource(simple_cache, node()))
+2.) resource_discovery is a gen_server and stores its data in its state (not in Mnesia).
+3.) simple_cache is registered under that name on every node.
+4.) simple_cache uses Mnesia to store (key, pid)-pairs. The pids store the value for its key.
+5.) resource_discovery is started before simple_cache.
+6.) Mnesia runs on every node simple_cache runs. (simple_cache/src/sc_store.erl:17)
+
+To build this code, run the following commands:
+$ erlc -o ./simple_cache/ebin ./simple_cache/src/*.erl
+$ erlc -o ./resource_discovery/ebin ./resource_discovery/src/*.erl
+
+First start two contact nodes to setup a predefined cluster (which does nothing).
+The predefined cluster allows joining it with code that is all the same for every node who wants to join.
+Ensure that the default node names in simple_cache/src/sc_app.erl:46 match.
+$ erl -sname contact1
+$ erl -sname contact2
+
+To run the program, start Erlang like this:
+
+$ erl -sname mynode1 -pa ./simple_cache/ebin -pa ./resource_discovery/ebin/
+
+Then in the Erlang shell:
+1> observer:start(). % optional
+ok
+2> application:start(sasl).
+ok
+3> mnesia:start().
+ok
+4> application:start(resource_discovery).
+ok
+5> application:start(simple_cache).
+=INFO REPORT==== 12-Mar-2023::20:31:07.718971 ===            <<< this is to be expected as simple_cache shuts down mnesia to delete old schema and then restarts mnesia (simple_cache/src/sc_store.erl:15)
+    application: mnesia
+    exited: stopped
+    type: temporary
+ok
+
+Remember that the resource discovery will make simple_cache wait several seconds when it starts.
+
+Start two other nodes in the same way:
+$ erl -sname mynode2 -pa ./simple_cache/ebin -pa ./resource_discovery/ebin/
+$ erl -sname mynode3 -pa ./simple_cache/ebin -pa ./resource_discovery/ebin/
+
+Then try inserting something in the cache on one node, and looking it up on another node.
+
+Typical code you can use for playing around, e.g.:
+[ simple_cache:insert(X,X) || X <- lists:seq(1,10) ].        % on node mynode1
+[ simple_cache:insert(X,X) || X <- lists:seq(11,20) ].       % on node mynode2
+[ simple_cache:lookup(X) || X <- lists:seq(1,20) ].          % on both nodes
+
+Lease time is set to 20 seconds.
+
+Use: "mnesia:info()." in Erlang shell to see information about mnesia cluster:
+...
+running db nodes   = [mynode1@pc1,mynode2@pc1]
+...
