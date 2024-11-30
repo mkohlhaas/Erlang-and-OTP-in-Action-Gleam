@@ -7,6 +7,11 @@ run(M, N) ->
     T1 = erlang:system_time(),
     Launcher = self(),
     Pids = [spawn(fun() -> proc(Launcher) end) || _ <- lists:seq(1, N)],
+    
+    io:format("~p processes started in ~p seconds!~n", [
+        N, execTime(T1, erlang:system_time())
+    ]),
+    
     [HPid | TPids] = Pids,
     RPids = TPids ++ [HPid],
     [Pid ! {next, Next} || {Pid, Next} <- lists:zip(Pids, RPids)],
